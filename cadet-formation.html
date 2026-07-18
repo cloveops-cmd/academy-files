@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadet Academy — Formation Line-Up Planner</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --ink: #1c2430;
+    --muted: #6b7686;
+    --line: #e2e6ec;
+    --accent: #b3261e;
+    --helm-white: #fafafa;
+    --helm-red: #c62828;
+    --helm-yellow: #f2c320;
+    --helm-black: #2b2f36;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  header {
+    background: #1c2430;
+    color: #fff;
+    padding: 20px 28px;
+  }
+  header h1 { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: 0.3px; }
+  header p { margin: 0; font-size: 13px; color: #aeb8c6; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 24px 60px; }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+  }
+  .controls label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 5px; }
+  .controls input, .controls select {
+    font-size: 15px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    width: 90px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .controls select { width: auto; }
+  .summary { font-size: 13px; color: var(--muted); margin-left: auto; text-align: right; line-height: 1.5; }
+  .summary strong { color: var(--ink); }
+  .warn { color: var(--accent); font-weight: 600; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button {
+    font-size: 14px; font-weight: 600;
+    padding: 9px 18px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .tabs button.active { background: #1c2430; color: #fff; border-color: #1c2430; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-size: 13px;
+  }
+  .legend .item { display: flex; align-items: center; gap: 8px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    overflow-x: auto;
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 15px; }
+  .panel .sub { margin: 0 0 18px; font-size: 12.5px; color: var(--muted); }
+
+  /* Helmet */
+  .helmet {
+    position: relative;
+    width: 46px; height: 40px;
+    flex: 0 0 auto;
+  }
+  .helmet .dome {
+    position: absolute; left: 5px; top: 2px;
+    width: 36px; height: 28px;
+    border-radius: 18px 18px 6px 6px;
+    border: 1.5px solid rgba(0,0,0,0.35);
+  }
+  .helmet .brim {
+    position: absolute; left: 0; top: 26px;
+    width: 46px; height: 8px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(0,0,0,0.35);
+  }
+  .helmet .num {
+    position: absolute; left: 5px; top: 7px;
+    width: 36px;
+    text-align: center;
+    font-size: 13px; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .h-white .dome, .h-white .brim { background: var(--helm-white); }
+  .h-red .dome, .h-red .brim { background: var(--helm-red); }
+  .h-yellow .dome, .h-yellow .brim { background: var(--helm-yellow); }
+  .h-black .dome, .h-black .brim { background: var(--helm-black); }
+  .h-white .num, .h-red .num, .h-yellow .num { color: #111; }
+  .h-red .num { color: #111; background: transparent; }
+  .h-black .num { color: #fff; }
+  /* black number sticker rendering: small white sticker w/ black digit for leaders */
+  .sticker .num {
+    background: #fff;
+    border-radius: 3px;
+    left: 12px; width: 22px;
+    border: 1px solid rgba(0,0,0,0.4);
+    color: #111 !important;
+  }
+
+  .cadet { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 62px; }
+  .cadet .tag { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.2; min-height: 12px; }
+
+  /* Formation view */
+  .front-row { display: flex; justify-content: center; gap: 60px; margin-bottom: 6px; }
+  .front-row .cadet .tag { font-weight: 700; color: var(--ink); }
+  .facing {
+    text-align: center; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--muted); margin: 8px 0 18px;
+    border-top: 1px dashed var(--line); padding-top: 8px;
+  }
+  .squad-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+  .squad-row:last-child { border-bottom: none; }
+  .squad-label {
+    flex: 0 0 74px;
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .squad-members { display: flex; gap: 14px; }
+
+  /* Line view */
+  .line-view { display: flex; flex-wrap: wrap; gap: 8px 4px; align-items: flex-end; }
+  .line-view .cadet { width: 54px; }
+  .line-chunk { display: flex; gap: 4px; padding: 8px 6px 6px; border-radius: 8px; margin-right: 6px; margin-bottom: 8px; }
+  .line-chunk .chunk-label { display: none; }
+  .chunk-wrap { display: flex; flex-direction: column; align-items: flex-start; margin-right: 6px; margin-bottom: 8px; }
+  .chunk-wrap .chunk-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 0 0 4px 6px; }
+  .chunk-wrap .line-chunk { margin: 0; background: #f7f8fa; border: 1px solid var(--line); }
+
+  /* Roster */
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); }
+  td.num-cell { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; border: 1px solid rgba(0,0,0,0.15); }
+  .chip.white { background: #fafafa; color: #111; }
+  .chip.red { background: var(--helm-red); color: #fff; }
+  .chip.yellow { background: var(--helm-yellow); color: #111; }
+  .chip.black { background: var(--helm-black); color: #fff; }
+
+  .hidden { display: none; }
+  @media print {
+    .controls, .tabs { display: none; }
+    body { background: #fff; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cadet Academy — Formation Line-Up Planner</h1>
+  <p>Helmet colors, position numbers, and how the single-file line breaks into squads</p>
+</header>
+<div class="wrap">
+
+  <div class="controls">
+    <div>
+      <label for="total">Total class size</label>
+      <input type="number" id="total" min="10" max="600" value="50">
+    </div>
+    <div>
+      <label for="squads">Number of squads</label>
+      <input type="number" id="squads" min="2" max="12" value="8">
+    </div>
+    <div>
+      <label for="cadetColor">Cadet helmet color</label>
+      <select id="cadetColor">
+        <option value="black" selected>Black</option>
+        <option value="yellow">Yellow</option>
+        <option value="red">Red</option>
+        <option value="white">White</option>
+      </select>
+    </div>
+    <div class="summary" id="summary"></div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><span class="helmet h-white sticker" style="transform:scale(.8)"><span class="dome"></span><span class="brim"></span><span class="num">1</span></span> Class Leader — white helmet, black #1 sticker</div>
+    <div class="item"><span class="helmet h-red sticker" style="transform:scale(.8)"><span class="dome"></span><span class="brim"></span><span class="num">2</span></span> Assistant Class Leader — red helmet, black #2 sticker</div>
+    <div class="item"><span class="helmet h-yellow sticker" style="transform:scale(.8)"><span class="dome"></span><span class="brim"></span><span class="num">3</span></span> Squad Leader — yellow helmet, black number sticker</div>
+    <div class="item"><span class="helmet h-black" style="transform:scale(.8)"><span class="dome"></span><span class="brim"></span><span class="num">4</span></span> Cadet</div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabFormation" class="active" onclick="setView('formation')">Formation (by squad)</button>
+    <button id="tabLine" onclick="setView('line')">Single-file line</button>
+    <button id="tabRoster" onclick="setView('roster')">Number roster</button>
+  </div>
+
+  <div class="panel" id="viewFormation">
+    <h2>Formation — squads in ranks</h2>
+    <p class="sub">Squad 1 is the front rank. Each squad leader (yellow) is the leftmost position in their rank. Numbers run left &rarr; right, so the whole formation reads in number order from the front-left.</p>
+    <div id="formationArea"></div>
+  </div>
+
+  <div class="panel hidden" id="viewLine">
+    <h2>Single-file line — fall-in order</h2>
+    <p class="sub">The entire class in one line by number. Because numbering runs straight through each squad, every squad is a contiguous block — cadets just count off and peel into their rank when the formation is called.</p>
+    <div class="line-view" id="lineArea"></div>
+  </div>
+
+  <div class="panel hidden" id="viewRoster">
+    <h2>Number roster</h2>
+    <p class="sub">Assignment sheet: who wears what, and where they stand.</p>
+    <table>
+      <thead><tr><th>#</th><th>Role</th><th>Helmet</th><th>Squad</th><th>Position in rank</th></tr></thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  var view = 'formation';
+
+  function setView(v) {
+    view = v;
+    document.getElementById('viewFormation').classList.toggle('hidden', v !== 'formation');
+    document.getElementById('viewLine').classList.toggle('hidden', v !== 'line');
+    document.getElementById('viewRoster').classList.toggle('hidden', v !== 'roster');
+    document.getElementById('tabFormation').classList.toggle('active', v === 'formation');
+    document.getElementById('tabLine').classList.toggle('active', v === 'line');
+    document.getElementById('tabRoster').classList.toggle('active', v === 'roster');
+  }
+
+  function buildModel() {
+    var total = parseInt(document.getElementById('total').value, 10) || 50;
+    var nSquads = parseInt(document.getElementById('squads').value, 10) || 8;
+    var cadetColor = document.getElementById('cadetColor').value;
+
+    var squadPool = total - 2; // class leader + assistant stand out front
+    var base = Math.floor(squadPool / nSquads);
+    var extra = squadPool % nSquads; // first `extra` squads get one more
+
+    var people = [];
+    people.push({ n: 1, role: 'Class Leader', color: 'white', squad: null, pos: 'Front of formation', leader: true });
+    people.push({ n: 2, role: 'Assistant Class Leader', color: 'red', squad: null, pos: 'Front of formation', leader: true });
+
+    var num = 3;
+    var squads = [];
+    for (var s = 1; s <= nSquads; s++) {
+      var size = base + (s <= extra ? 1 : 0);
+      var members = [];
+      for (var i = 0; i < size; i++) {
+        var isLeader = (i === 0);
+        var p = {
+          n: num,
+          role: isLeader ? 'Squad ' + s + ' Leader' : 'Cadet',
+          color: isLeader ? 'yellow' : cadetColor,
+          squad: s,
+          pos: isLeader ? '1st (leftmost)' : ordinal(i + 1) + ' from left',
+          leader: isLeader
+        };
+        members.push(p);
+        people.push(p);
+        num++;
+      }
+      squads.push({ s: s, members: members });
+    }
+    return { total: total, nSquads: nSquads, base: base, extra: extra, people: people, squads: squads };
+  }
+
+  function ordinal(i) {
+    var s = ['th','st','nd','rd'], v = i % 100;
+    return i + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function helmetHTML(p, small) {
+    var stickerClass = p.leader ? ' sticker' : '';
+    return '<div class="cadet"><div class="helmet h-' + p.color + stickerClass + '">' +
+      '<span class="dome"></span><span class="brim"></span><span class="num">' + p.n + '</span></div>' +
+      '<div class="tag">' + tagFor(p, small) + '</div></div>';
+  }
+
+  function tagFor(p, small) {
+    if (p.n === 1) return 'Class Ldr';
+    if (p.n === 2) return 'Asst Ldr';
+    if (p.leader) return small ? 'SL' : 'Sqd ' + p.squad + ' Ldr';
+    return small ? '' : '&nbsp;';
+  }
+
+  function render() {
+    var m = buildModel();
+
+    // summary
+    var sizes = m.squads.map(function(sq){ return sq.members.length; });
+    var uneven = m.extra !== 0;
+    document.getElementById('summary').innerHTML =
+      '<strong>' + m.total + '</strong> total &middot; 2 out front &middot; <strong>' + m.nSquads + '</strong> squads of ' +
+      (uneven ? (m.base + 1) + ' / ' + m.base + ' <span class="warn">(uneven &mdash; squads 1&ndash;' + m.extra + ' carry the extra)</span>' : m.base + ' each');
+
+    // formation
+    var f = '<div class="front-row">' + helmetHTML(m.people[0]) + helmetHTML(m.people[1]) + '</div>';
+    f += '<div class="facing">&darr;&nbsp; facing the class &nbsp;&darr;</div>';
+    m.squads.forEach(function(sq) {
+      f += '<div class="squad-row"><div class="squad-label">Squad ' + sq.s + '</div><div class="squad-members">';
+      sq.members.forEach(function(p) { f += helmetHTML(p); });
+      f += '</div></div>';
+    });
+    document.getElementById('formationArea').innerHTML = f;
+
+    // line view — chunked by squad
+    var l = '<div class="chunk-wrap"><div class="chunk-title">Out front</div><div class="line-chunk">' +
+            helmetHTML(m.people[0], true) + helmetHTML(m.people[1], true) + '</div></div>';
+    m.squads.forEach(function(sq) {
+      var first = sq.members[0].n, last = sq.members[sq.members.length - 1].n;
+      l += '<div class="chunk-wrap"><div class="chunk-title">Squad ' + sq.s + ' &middot; #' + first + '&ndash;' + last + '</div><div class="line-chunk">';
+      sq.members.forEach(function(p) { l += helmetHTML(p, true); });
+      l += '</div></div>';
+    });
+    document.getElementById('lineArea').innerHTML = l;
+
+    // roster
+    var r = '';
+    m.people.forEach(function(p) {
+      r += '<tr><td class="num-cell">' + p.n + '</td><td>' + p.role + '</td>' +
+           '<td><span class="chip ' + p.color + '">' + p.color.charAt(0).toUpperCase() + p.color.slice(1) +
+           (p.leader ? ' + black # sticker' : '') + '</span></td>' +
+           '<td>' + (p.squad ? 'Squad ' + p.squad : '&mdash;') + '</td><td>' + p.pos + '</td></tr>';
+    });
+    document.getElementById('rosterBody').innerHTML = r;
+  }
+
+  document.getElementById('total').addEventListener('input', render);
+  document.getElementById('squads').addEventListener('input', render);
+  document.getElementById('cadetColor').addEventListener('change', render);
+  render();
+</script>
+</body>
+</html>
